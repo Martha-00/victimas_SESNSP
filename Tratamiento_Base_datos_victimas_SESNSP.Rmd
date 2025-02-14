@@ -1,0 +1,139 @@
+---
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+lang: es
+header-includes:
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \usepackage[absolute,overlay]{textpos}
+---
+
+```{r setup, include = FALSE}
+# Configuración de los bloques de código
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment = "#")
+```
+
+---
+#######################
+# Portada
+#######################
+---
+
+\pagenumbering{gobble}
+
+\begin{center}
+\LARGE \textbf{Víctimas del Secretariado Ejecutivo del Sistema Nacional de Seguridad Pública (SESNSP)}
+\end{center}
+\vspace{3cm}
+
+\begin{center}
+\LARGE \textbf{Tratamiento y acomodo de la base de datos de las víctimas que reporta el SESNSP en el periodo 2015-2024}
+\end{center}
+\vspace{4cm}
+
+\LARGE
+\textbf{Elabora:} Martha Aguilar Jiménez\
+\textbf{Fecha de actualización:}\ Febrero de 2025.
+
+\normalsize
+\pagebreak
+
+\newpage
+\pagenumbering{arabic}
+
+::: text-justify 
+
+Este documento tiene como objetivo explicar cómo realicé la descarga de la base de datos de las Cifras de Víctimas del Fuero Común (enero 2015 - diciembre 2024), así como el tratamiento previo que apliqué para hacerla más manejable y fácil de manipular.
+
+La liga para descargar las base es la siguiente:[**Cifras de Víctimas del Fuero Común, 2015- 2024**](https://www.gob.mx/sesnsp/acciones-y-programas/datos-abiertos-de-incidencia-delictiva).
+
+Como primer paso se realiza la limpieza, instalación de paquetes, librerías, lectura de las bases de datos y ajustes de algunas variables de interés.
+
+```{r eval = FALSE}
+# Limpieza del entorno de R
+rm(list=ls())
+```
+
+Se instalan los paquetes los cuales contienen las librerías de interés.
+
+
+
+```{r message=FALSE, warning=FALSE, eval = FALSE}
+packages<-c("foreign", "plyr", "dplyr", "readxl","openxlsx", "grid", "readr", "tidyverse")
+if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
+  install.packages(setdiff(packages, rownames(installed.packages())))  
+}
+lapply(packages, require, character.only=TRUE)
+
+# Libreria utilizada
+library(foreign) # Lee datos almacenados en un formato externo
+library(plyr) #Se usa para dividir, aplicar y combinar datos
+library(dplyr)# Para filtrar, transformar y agrupar datos de manera eficiente.
+library(readxl)#Se usa para leer archivos Excel
+library(openxlsx)#Permite leer y escribir archivos Excel
+library(grid) #Proporciona herramientas para diseñar y personalizar gráficos.
+library(readr) #Lee archivos de texto como CSV
+library(tidyverse)# Diseñada para análisis de datos 
+```
+
+
+Se define el directorio de trabajo con la ubicación de la base de datos.
+
+```{r message=FALSE, warning=FALSE, eval = FALSE}
+# Se define el directorio
+getwd()
+ruta1 <- "D:/PRUEBA_INMUJERES/Víctimas_SESNSP/"
+victimas<-fread(paste0(ruta1,"IDVFC_NM_dic24.csv"),encoding="Latin-1")
+
+#Se renombran algunas variables
+names(victimas)[4] <- "Bien_jurid_afect"
+names(victimas)[5] <- "Tipo_delito"
+names(victimas)[6] <- "Subtipo_delito"
+names(victimas)[9] <- "Rango_edad"
+```
+Se hace el tratamiento de la base de datos para que sea manejable y fácil de manipular, 
+Se van a convertir las columnas "Enero" a "Diciembre" en una sola columna además, se agregará una columna en donde se mencione su respectivo mes en R.
+
+
+```{r message=FALSE, warning=FALSE, eval = FALSE}
+# Se define el directorio}
+victimas_1 <- melt(victimas, id.vars = c("Año", "Clave_Ent", "Entidad", "Bien_jurid_afect", "Tipo_delito", "Subtipo_delito", "Modalidad", "Sexo", "Rango_edad"), 
+                   variable.name = "Mes", value.name = "Víctimas")
+```
+**NOTA**: Se revisó y validó que el resultado de esta nueva base aplicara el cambio sin alterar o modificar la asignación de los datos. 
+Con esa base de dato se trabajará para realizar la visualización de datos desde la app de Shiny en R.
+
+Se convierten a factor las siguientes variables: Año, Entidad, Bien_jurid_afect,
+Tipo_delito, Subtipo_delito, Modalidad, Sexo, Rango_edad, Mes.
+
+Convertir a factor y revisión de la estructura de los datos.
+
+```{r message=FALSE, warning=FALSE, eval = FALSE}
+#Convertir a factor
+factores <- c("Año", "Entidad", "Bien_jurid_afect", "Tipo_delito", "Subtipo_delito", "Modalidad", "Sexo", "Rango_edad", "Mes")
+victimas_1[, (factores) := lapply(.SD, as.factor), .SDcols = factores]
+# Se imprimen los primeros registros de la nueva base
+head(victimas_1)
+#Se exporta el resultado
+#write.xlsx(victimas_1, "D:/PRUEBA_INMUJERES/victimas_2015_2024.xlsx", overwrite = TRUE)
+
+#Se revisa la estructura de los datos
+
+str(victimas_1)  # Estructura de los datos
+summary(victimas_1)  # Resumen estadístico
+colnames(victimas_1)  # Nombres de columnas
+
+```
+
+Se exporta la base de datos
+
+```{r message=FALSE, warning=FALSE, eval = FALSE}
+#Se exporta el resultado
+#write.xlsx(victimas_1, "D:/PRUEBA_INMUJERES/Víctimas_SESNSP/victimas_2015_2024.xlsx", overwrite = TRUE)
+```
+
+str(victimas_1)
